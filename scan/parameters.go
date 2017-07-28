@@ -158,6 +158,7 @@ type paramDecl struct {
 	Decl         *ast.GenDecl
 	TypeSpec     *ast.TypeSpec
 	OperationIDs []string
+	IsBody       bool
 }
 
 func (sd *paramDecl) inferOperationIDs() (opids []string) {
@@ -172,10 +173,21 @@ func (sd *paramDecl) inferOperationIDs() (opids []string) {
 			for _, ln := range strings.Split(cmt.Text, "\n") {
 				matches := rxParametersOverride.FindStringSubmatch(ln)
 				if len(matches) > 1 && len(matches[1]) > 0 {
-					for _, pt := range strings.Split(matches[1], " ") {
-						tr := strings.TrimSpace(pt)
-						if len(tr) > 0 {
-							opids = append(opids, tr)
+					ids := strings.Split(matches[1], " ")
+					if len(ids) > 0 {
+						if ids[0] == "bodyParam" {
+							sd.IsBody = true
+						} else {
+							tr := strings.TrimSpace(ids[0])
+							if len(tr) > 0 {
+								opids = append(opids, tr)
+							}
+						}
+						for _, pt := range ids[1:] {
+							tr := strings.TrimSpace(pt)
+							if len(tr) > 0 {
+								opids = append(opids, tr)
+							}
 						}
 					}
 					break DECLS
@@ -231,6 +243,9 @@ func (pp *paramStructParser) parseDecl(operations map[string]*spec.Operation, de
 			operation = new(spec.Operation)
 			operations[opid] = operation
 			operation.ID = opid
+		}
+		ps := make(map[string]spec.Parameter)
+		if decl.IsBody {
 		}
 
 		// analyze struct body for fields etc
@@ -315,7 +330,7 @@ func (pp *paramStructParser) parseStructType(gofile *ast.File, operation *spec.O
 					continue
 				}
 
-				in := "query"
+				in := ""
 				// scan for param location first, this changes some behavior down the line
 				if fld.Doc != nil {
 					for _, cmt := range fld.Doc.List {
@@ -326,6 +341,9 @@ func (pp *paramStructParser) parseStructType(gofile *ast.File, operation *spec.O
 							}
 						}
 					}
+				}
+				if in == "" {
+					continue
 				}
 
 				ps := pt[nm]

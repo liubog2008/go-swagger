@@ -125,11 +125,6 @@ func (pc *programClassifier) Classify(prog *loader.Program) (*classifiedProgram,
 									cp.Parameters = append(cp.Parameters, file)
 									pm = true
 								}
-								if seenStruct == "" || seenStruct == matches[1] {
-									seenStruct = matches[1]
-								} else {
-									return nil, fmt.Errorf("classifier: already annotated as %s, can't also be %q", seenStruct, matches[1])
-								}
 							case "response":
 								if !rs {
 									cp.Responses = append(cp.Responses, file)
